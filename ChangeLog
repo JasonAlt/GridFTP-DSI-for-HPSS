@@ -1,5 +1,8 @@
 Version 2.15.rc1: Tue Jun  8 16:54:10 EDT 2021
 	- Changed DSI load name from "hpss_local "to "hpss".
+	- Support for GCSv5.4
+	  - Any GCSv4 installation of this package will need to modify
+	  /etc/gridftp.d/hpss manually.
 
 Version 2.14.rc1: Mon Aug 31 10:04:45 EDT 2020
 	Feature release. Improved logging and error reporting.
