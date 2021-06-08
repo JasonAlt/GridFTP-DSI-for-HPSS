@@ -25,11 +25,13 @@ Requires: globus-gridftp-server >= 12.24
 Requires: openssl
 Requires: hpss-lib
 Requires: libtirpc
+Requires: jansson
 
 BuildRequires: globus-gridftp-server-devel >= 12
 BuildRequires: openssl-devel
 BuildRequires: hpss-lib-devel
 BuildRequires: libtirpc-devel
+BuildRequires: jansson-devel
 
 %description
 HPSS Connector for the Globus Transfer Service

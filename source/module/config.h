@@ -17,7 +17,7 @@ typedef struct config
 } config_t;
 
 globus_result_t
-config_init(config_t **Config);
+config_init(globus_gfs_operation_t Operation, config_t **Config);
 
 void
 config_destroy(config_t *Config);

@@ -2,6 +2,7 @@
  * System includes
  */
 #include <stdlib.h>
+#include <jansson.h>
 
 /*
  * Globus includes
@@ -294,18 +295,82 @@ config_process_env()
     return GLOBUS_SUCCESS;
 }
 
+static globus_result_t
+config_parse_json(const char * JsonConfig, config_t * Config)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 rc = 0;
+    json_t *                            json = NULL;
+    json_error_t                        json_error = {0};
+    char *                              authentication_mech = NULL;
+    char *                              authenticator = NULL;
+    int                                 uda_checksum = 0;
+
+    json = json_loads(JsonConfig, 0, &json_error);
+    if (json == NULL)
+    {
+        const char *fmt = "Error loading collection storage policy: %s\n";
+        size_t msg_len = snprintf(NULL, 0, fmt, json_error.text);
+        char msg[msg_len+1];
+
+        snprintf(msg, sizeof(msg), fmt, json_error.text);
+
+        result = GlobusGFSErrorGeneric(msg);
+
+        goto error_load;
+    }
+
+    rc = json_unpack_ex(
+            json,
+            &json_error,
+            0,
+            "{s:s, s:s, s:b}",
+            "authentication_mech",
+            &authentication_mech,
+            "authenticator",
+            &authenticator,
+            "uda_checksum",
+            &uda_checksum);
+
+    if (rc != 0)
+    {
+        const char *fmt = "Error unpacking collection storage policy: %s\n";
+        size_t msg_len = snprintf(NULL, 0, fmt, json_error.text);
+        char msg[msg_len+1];
+
+        snprintf(msg, sizeof(msg), fmt, json_error.text);
+
+        result = GlobusGFSErrorInternalError(msg);
+
+        goto unpack_fail;
+    }
+
+    Config->LoginName = strdup("hpssftp");
+    Config->AuthenticationMech = strdup(authentication_mech);
+    Config->Authenticator = strdup(authenticator);
+    Config->UDAChecksumSupport = 0;
+    Config->UDAChecksumSupport = uda_checksum;
+
+    log_message(
+        LOG_TYPE_DEBUG,
+        "HPSS Connector loaded with config: %s=%s, %s=%s, %s=%s, %s=%s",
+        "LoginName", Config->LoginName,
+        "AuthenticationMech", Config->AuthenticationMech,
+        "Authenticator", Config->Authenticator,
+        "UDAChecksumSupport", Config->UDAChecksumSupport ? "True" : "False");
+
+unpack_fail:
+    json_decref(json);
+error_load:
+
+    return result;
+}
+
 globus_result_t
-config_init(config_t **Config)
+config_init(globus_gfs_operation_t Operation, config_t **Config)
 {
     char *          config_file_path = NULL;
     globus_result_t result           = GLOBUS_SUCCESS;
-
-    *Config = NULL;
-
-    /* Find the config file. */
-    result = config_find_config_file(&config_file_path);
-    if (result != GLOBUS_SUCCESS)
-        return result;
 
     /* Allocate the config struct */
     *Config = malloc(sizeof(config_t));
@@ -316,10 +381,25 @@ config_init(config_t **Config)
     }
     memset(*Config, 0, sizeof(config_t));
 
-    result = config_parse_file(config_file_path, *Config);
-    if (result)
-        goto cleanup;
+    char * config_data = NULL;
+    globus_gridftp_server_get_config_data(Operation, "config", &config_data);
+    if (config_data)
+    {
+        result = config_parse_json(config_data, *Config);
+        if (result)
+            goto cleanup;
+    } else
+    {
+        /* Find the config file. */
+        result = config_find_config_file(&config_file_path);
+        if (result != GLOBUS_SUCCESS)
+            return result;
 
+        result = config_parse_file(config_file_path, *Config);
+        if (result)
+            goto cleanup;
+
+    }
     result = config_process_env();
 
 cleanup:
