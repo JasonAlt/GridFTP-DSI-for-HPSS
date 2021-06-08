@@ -1,2 +1,2 @@
-load_dsi_module hpss_local
+load_dsi_module hpss
 threads 1

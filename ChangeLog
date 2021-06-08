@@ -1,3 +1,6 @@
+Version 2.15.rc1: Tue Jun  8 16:54:10 EDT 2021
+	- Changed DSI load name from "hpss_local "to "hpss".
+
 Version 2.14.rc1: Mon Aug 31 10:04:45 EDT 2020
 	Feature release. Improved logging and error reporting.
 	- Error messages with severity ERROR, WARN and INFO are now sent to
