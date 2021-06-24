@@ -11,6 +11,7 @@ SOURCES = authenticate.c \
           dsi.c          \
           fixups.c       \
           fixups.h       \
+          gcsv5.c        \
           hooks.c        \
           hpss.c         \
           hpss.h         \
